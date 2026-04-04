@@ -23,6 +23,20 @@ export function setupInput({ shipGroup, ensureAudio }) {
     _ensureAudioCb = ensureAudio;
 
     window.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT') {
+            if (e.code === 'Backquote') {
+                e.preventDefault();
+                window.dispatchEvent(new Event('toggleTerminal'));
+            }
+            return;
+        }
+
+        if (e.code === 'Backquote' || e.key === '~') {
+            e.preventDefault();
+            window.dispatchEvent(new Event('toggleTerminal'));
+            return;
+        }
+
         keys[e.code] = true;
         ensureAudio();
         if (['Space','ControlLeft','ControlRight'].includes(e.code)) e.preventDefault();

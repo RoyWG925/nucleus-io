@@ -7,7 +7,16 @@
     <meta name="description" content="NUCLEUS.IO — Roy Wang's interactive 3D portfolio. Fly through space, discover projects, and explore creative engineering."/>
     <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Outfit:wght@300;400;500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="style.css"/>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+  <script type="module" crossorigin src="/assets/index-DTxA-T8N.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DfLG1xVp.css">
 </head>
 <body>
     <div id="three-container"></div>
@@ -217,14 +226,6 @@
         </div>
     </footer>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-        }
-    }
-    </script>
-    <script type="module" src="app.js"></script>
+
 </body>
 </html>

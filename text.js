@@ -52,12 +52,12 @@ export function loadNeonText(scene) {
 function createNeonText(scene, font) {
     const text = 'ROY WANG';
     const textColors = [
-        COLORS.secondary, COLORS.tertiary, COLORS.primary,
+        0xffffff, 0xffffff, 0xffffff,
         0, // space
-        COLORS.tertiary, COLORS.primary, COLORS.secondary, COLORS.container,
+        0xff5352, 0xff5352, 0xff5352, 0xff5352,
     ];
     const size = 2;
-    const depth = 0.8;
+    const depth = 0.3;
     let offsetX = 0;
     const spacing = 0.8;
 
@@ -97,12 +97,27 @@ function createNeonText(scene, font) {
         const d = bb.max.z - bb.min.z;
         const col = textColors[i] || COLORS.tertiary;
 
-        const mat = new THREE.MeshStandardMaterial({
-            color: col, emissive: col,
-            emissiveIntensity: 0.5, metalness: 0.95, roughness: 0.05,
-            transparent: true, opacity: 0.55,
+        // Core material: Sleek glowing glass
+        const mat = new THREE.MeshPhysicalMaterial({
+            color: 0x000000, 
+            emissive: col,
+            emissiveIntensity: 0.6, 
+            metalness: 0.8, 
+            roughness: 0.1,
+            transparent: true, 
+            opacity: 0.6,
+            clearcoat: 1.0
         });
         const mesh = new THREE.Mesh(geos[i], mat);
+        
+        // Add crisp neon borders (Toned down)
+        const edges = new THREE.EdgesGeometry(geos[i], 30);
+        const edgeLine = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ 
+            color: col, 
+            transparent: true, 
+            opacity: 0.3 
+        }));
+        mesh.add(edgeLine);
         mesh.position.set(offsetX, -size/2, 0);
         textGroup.add(mesh);
 

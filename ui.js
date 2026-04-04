@@ -5,7 +5,7 @@
 import { setGravity, getGravity } from './physics.js';
 import { PROJECT_ORBS } from './constants.js';
 import { projectOrbs } from './mechanics.js';
-import { setCinematicTarget } from './ship.js';
+import { setCinematicTarget, setShipVariant } from './ship.js';
 import { camera } from './scene.js';
 
 /**
@@ -125,11 +125,12 @@ export function setupUI(audio, ensureAudio) {
         });
     }
 
-    // Ship selector (dummy for now)
+    // Ship selector
     document.querySelectorAll('.hud-btn[data-tool="ship"]').forEach(btn => {
         btn.addEventListener('click', () => {
-            // Just visuals for now, you could inject logic here
-            window.showLog?.("Hangar access restricted", "system");
+            const variant = btn.dataset.ship;
+            setShipVariant(variant);
+            window.showLog?.(`Hangar: Deployed ${variant.toUpperCase()} class`, "system");
         });
     });
 
@@ -212,5 +213,114 @@ export function setupUI(audio, ensureAudio) {
             });
             pnvList.appendChild(el);
         });
+    }
+
+    // ── Developer Terminal ──
+    const terminal = document.getElementById('dev-terminal');
+    const termInput = document.getElementById('terminal-input');
+    const termOutput = document.getElementById('terminal-output');
+    const termClose = document.getElementById('term-close');
+
+    function toggleTerminal() {
+        if (!terminal) return;
+        const isHidden = terminal.classList.contains('hidden');
+        if (isHidden) {
+            terminal.classList.remove('hidden');
+            if (document.pointerLockElement) document.exitPointerLock();
+            setTimeout(() => termInput?.focus(), 100);
+            if (audio) audio.playUIClick();
+        } else {
+            terminal.classList.add('hidden');
+            termInput?.blur();
+        }
+    }
+
+    window.addEventListener('toggleTerminal', toggleTerminal);
+    if (termClose) termClose.addEventListener('click', toggleTerminal);
+
+    const termHistory = [];
+    let historyIdx = -1;
+
+    function printTerm(html) {
+        if (!termOutput) return;
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        termOutput.appendChild(div);
+        termOutput.scrollTop = termOutput.scrollHeight;
+    }
+
+    if (termInput) {
+        termInput.addEventListener('keydown', (e) => {
+            if (e.code === 'Enter') {
+                const cmd = termInput.value.trim();
+                if (!cmd) return;
+                printTerm(`<span class="prompt">root@nexus:/$</span> ${cmd}`);
+                termInput.value = '';
+                termHistory.push(cmd);
+                historyIdx = termHistory.length;
+                processCommand(cmd);
+            } else if (e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIdx > 0) {
+                    historyIdx--;
+                    termInput.value = termHistory[historyIdx];
+                }
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIdx < termHistory.length - 1) {
+                    historyIdx++;
+                    termInput.value = termHistory[historyIdx];
+                } else {
+                    historyIdx = termHistory.length;
+                    termInput.value = '';
+                }
+            }
+        });
+    }
+
+    function processCommand(cmd) {
+        const args = cmd.split(' ').map(s => s.toLowerCase());
+        const main = args[0];
+
+        switch (main) {
+            case 'help':
+                printTerm(`Available commands:<br>
+                <span class="term-highlight">ship --switch [viper|phantom|titan]</span> : Switch active spacecraft<br>
+                <span class="term-highlight">status</span> : Print system diagnostics<br>
+                <span class="term-highlight">clear</span> : Clear terminal output<br>
+                <span class="term-highlight">reboot</span> : Restart NUCLEUS.IO engine`);
+                break;
+            case 'clear':
+                if (termOutput) termOutput.innerHTML = '';
+                break;
+            case 'status':
+                printTerm(`<span class="term-success">[OK]</span> Core Life Support: ONLINE`);
+                printTerm(`<span class="term-success">[OK]</span> Godot Game Engine: DETECTED`);
+                printTerm(`<span class="term-success">[OK]</span> NLP Transformers: OPTIMIZED`);
+                printTerm(`<span class="term-success">[OK]</span> React State: SYNCED`);
+                break;
+            case 'reboot':
+                printTerm(`Rebooting system...`);
+                setTimeout(() => location.reload(), 500);
+                break;
+            case 'ship':
+                if (args[1] === '--switch' && args[2]) {
+                    const variant = args[2];
+                    if (['viper', 'phantom', 'titan'].includes(variant)) {
+                        setShipVariant(variant);
+                        printTerm(`<span class="term-success">Success:</span> Switched to ${variant.toUpperCase()} class.`);
+                        document.querySelectorAll('.hud-btn[data-tool="ship"]').forEach(b => {
+                            b.classList.toggle('active', b.dataset.ship === variant);
+                        });
+                    } else {
+                        printTerm(`<span class="term-error">Error:</span> Unknown class '${variant}'. Models: viper, phantom, titan.`);
+                    }
+                } else {
+                     printTerm(`Usage: <span class="term-highlight">ship --switch [model]</span>`);
+                }
+                break;
+            default:
+                printTerm(`<span class="term-error">Command not found:</span> ${main}. Type 'help' for options.`);
+        }
     }
 }

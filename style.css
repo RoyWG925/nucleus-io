@@ -16,9 +16,9 @@
     --secondary: #ffade5;
     --tertiary: #c2c1ff;
     --on-surface: #ecddf3;
-    --font-headline: 'Epilogue', sans-serif;
-    --font-body: 'Plus Jakarta Sans', sans-serif;
-    --font-label: 'Space Grotesk', sans-serif;
+    --font-headline: 'Michroma', sans-serif;
+    --font-body: 'Outfit', sans-serif;
+    --font-label: 'Rajdhani', sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -242,15 +242,12 @@ img { display: block; max-width: 100%; }
 .project-panel {
     --pp-accent: var(--secondary);
     position: fixed; left: 32px; top: 50%; transform: translateY(-50%) translateX(-40px);
-    z-index: 60; width: 360px; max-width: calc(100vw - 120px);
-    background: rgba(37,28,44,0.85); backdrop-filter: blur(20px) saturate(1.4);
-    border: 1.5px solid rgba(255,255,255,0.08);
-    border-left: 3px solid var(--pp-accent);
-    border-radius: 18px; padding: 28px;
-    box-shadow:
-        0 0 30px rgba(0,0,0,0.5),
-        0 0 60px rgba(0,0,0,0.2),
-        inset 0 1px 0 rgba(255,255,255,0.06);
+    z-index: 60; width: 440px; max-width: calc(100vw - 64px);
+    background: rgba(15, 10, 20, 0.75); backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-left: 2px solid var(--pp-accent);
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
     opacity: 0; pointer-events: none;
     transition: opacity 0.4s ease, transform 0.5s cubic-bezier(.34,1.56,.64,1);
 }
@@ -259,78 +256,75 @@ img { display: block; max-width: 100%; }
     transform: translateY(-50%) translateX(0);
 }
 .pp-header {
+    position: absolute; top: 0; left: 0; width: 100%;
     display: flex; justify-content: space-between; align-items: flex-start;
-    margin-bottom: 6px;
+    padding: 16px 20px; z-index: 2;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
 }
 .pp-name {
-    font-family: var(--font-headline); font-weight: 900;
-    font-size: 1.3rem; letter-spacing: -0.02em;
-    color: var(--pp-accent);
-    text-shadow: 0 0 12px color-mix(in srgb, var(--pp-accent) 50%, transparent);
+    font-family: var(--font-headline); font-weight: 400;
+    font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;
+    color: #fff; text-shadow: 0 0 10px color-mix(in srgb, var(--pp-accent) 60%, transparent);
 }
 .pp-close {
-    font-size: 1.4rem; line-height: 1; color: rgba(255,255,255,0.3);
-    transition: color 0.2s, transform 0.2s;
-    padding: 0 4px;
+    font-size: 1.5rem; line-height: 1; color: rgba(255,255,255,0.4);
+    transition: color 0.2s, transform 0.2s; padding: 0 4px;
 }
-.pp-close:hover { color: var(--primary); transform: scale(1.2); }
+.pp-close:hover { color: var(--primary); transform: scale(1.15) rotate(90deg); }
 
+.pp-image {
+    width: 100%; height: 210px; object-fit: cover; object-position: top;
+    mask-image: linear-gradient(to bottom, black 60%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent);
+    filter: contrast(1.1) brightness(0.9);
+}
+
+.pp-content {
+    padding: 0 24px 24px; position: relative; top: -20px;
+}
 .pp-tagline {
-    font-family: var(--font-body); font-size: 0.78rem;
-    color: rgba(255,255,255,0.5); font-style: italic;
-    margin-bottom: 10px;
+    font-family: var(--font-body); font-size: 0.8rem; font-weight: 300;
+    color: rgba(255,255,255,0.6); font-style: italic; margin-bottom: 12px;
 }
 .pp-tech {
-    font-family: var(--font-label); font-size: 0.68rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--pp-accent); opacity: 0.7;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
+    font-family: var(--font-label); font-size: 0.75rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--pp-accent); margin-bottom: 14px; padding-bottom: 12px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .pp-desc {
-    font-family: var(--font-body); font-size: 0.82rem;
-    color: rgba(255,255,255,0.7); line-height: 1.6;
-    margin-bottom: 14px;
+    font-family: var(--font-body); font-size: 0.85rem; font-weight: 300;
+    color: rgba(255,255,255,0.75); line-height: 1.6; margin-bottom: 20px;
 }
 .pp-badges {
-    display: flex; flex-wrap: wrap; gap: 6px;
-    margin-bottom: 14px;
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
 }
 .pp-badge {
-    font-family: var(--font-label); font-size: 0.6rem;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    padding: 3px 10px; border-radius: 20px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.5);
+    font-family: var(--font-label); font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 4px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
 }
-.pp-links {
-    display: flex; gap: 10px; flex-wrap: wrap;
-}
+.pp-links { display: flex; gap: 12px; flex-wrap: wrap; }
 .pp-link {
-    font-family: var(--font-label); font-size: 0.7rem;
-    letter-spacing: 0.06em; padding: 6px 14px;
-    border-radius: 8px; transition: all 0.25s;
+    font-family: var(--font-label); font-size: 0.75rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 8px 16px; border-radius: 4px; transition: all 0.3s;
     text-decoration: none; display: inline-block;
 }
 .pp-link.github {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8);
 }
-.pp-link.github:hover {
-    background: rgba(255,255,255,0.12);
-    color: #fff;
-}
+.pp-link.github:hover { background: rgba(255,255,255,0.15); color: #fff; }
 .pp-link.demo {
-    background: color-mix(in srgb, var(--pp-accent) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--pp-accent) 30%, transparent);
-    color: var(--pp-accent);
+    background: color-mix(in srgb, var(--pp-accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--pp-accent) 40%, transparent);
+    color: var(--pp-accent); box-shadow: 0 0 15px color-mix(in srgb, var(--pp-accent) 0%, transparent);
 }
 .pp-link.demo:hover {
-    background: color-mix(in srgb, var(--pp-accent) 35%, transparent);
-    color: #fff;
+    background: color-mix(in srgb, var(--pp-accent) 25%, transparent); color: #fff;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--pp-accent) 40%, transparent);
 }
 
 /* ===================== ANIMATIONS ===================== */

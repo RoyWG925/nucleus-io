@@ -404,6 +404,16 @@ export function showProjectPanel(data) {
     panel.querySelector('.pp-tech').textContent = data.tech;
     panel.querySelector('.pp-desc').textContent = data.desc;
 
+    const previewImg = panel.querySelector('#pp-preview');
+    if (previewImg) {
+        if (data.preview) {
+            previewImg.src = data.preview;
+            previewImg.style.display = 'block';
+        } else {
+            previewImg.style.display = 'none';
+        }
+    }
+
     // Badges
     const badgeWrap = panel.querySelector('.pp-badges');
     badgeWrap.innerHTML = '';
