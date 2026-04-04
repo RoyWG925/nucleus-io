@@ -22,15 +22,30 @@ export function loadNeonText(scene) {
 
     return new Promise((resolve) => {
         const loader = new FontLoader();
-        loader.load(FONT_URL, (font) => {
-            if (loaderFill) loaderFill.style.width = '80%';
-            createNeonText(scene, font);
-            if (loaderFill) loaderFill.style.width = '100%';
-            setTimeout(() => {
-                document.getElementById('loading-screen')?.classList.add('fade-out');
-            }, 400);
-            resolve(letters);
-        });
+        
+        // Failsafe: if loader takes too long or fails, force fade out
+        const forceResolve = () => {
+             if (loaderFill) loaderFill.style.width = '100%';
+             setTimeout(() => document.getElementById('loading-screen')?.classList.add('fade-out'), 400);
+             resolve(letters);
+        };
+        const failTimeout = setTimeout(forceResolve, 5000);
+
+        loader.load(
+            FONT_URL, 
+            (font) => {
+                clearTimeout(failTimeout);
+                if (loaderFill) loaderFill.style.width = '80%';
+                createNeonText(scene, font);
+                forceResolve();
+            },
+            undefined,
+            (err) => {
+                console.error('Font loading failed:', err);
+                clearTimeout(failTimeout);
+                forceResolve();
+            }
+        );
     });
 }
 
