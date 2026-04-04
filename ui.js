@@ -118,10 +118,9 @@ export function setupUI(audio, ensureAudio) {
             const collected = projectOrbs.find((o) => o.data.name === data.name && o.collected);
             const el = document.createElement('div');
             el.className = 'ao-item ' + (collected ? 'collected' : '');
-            el.innerHTML = \`
-                <div class="ao-item-name">\${data.name}</div>
-                <div class="ao-item-status">\${collected ? 'ACQUIRED' : 'LOCKED'}</div>
-            \`;
+            el.innerHTML =
+                '<div class="ao-item-name">' + data.name + '</div>' +
+                '<div class="ao-item-status">' + (collected ? 'ACQUIRED' : 'LOCKED') + '</div>';
             aoList.appendChild(el);
         });
     }
@@ -186,13 +185,12 @@ export function setupUI(audio, ensureAudio) {
         PROJECT_ORBS.forEach((data, index) => {
             const el = document.createElement('div');
             el.className = 'pnv-item';
-            el.innerHTML = `
-                <div>
-                    <div class="pnv-item-name">${data.name}</div>
-                    <div class="pnv-item-tech">${data.tech}</div>
-                </div>
-                <span class="material-symbols-outlined" style="color:var(--secondary)">movie</span>
-            `;
+            el.innerHTML =
+                '<div>' +
+                    '<div class="pnv-item-name">' + data.name + '</div>' +
+                    '<div class="pnv-item-tech">' + data.tech + '</div>' +
+                '</div>' +
+                '<span class="material-symbols-outlined" style="color:var(--secondary)">movie</span>';
             el.addEventListener('click', () => {
                 audio.playUIClick();
                 // 1. Hide the nav overlay

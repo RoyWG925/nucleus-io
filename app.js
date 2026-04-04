@@ -39,8 +39,16 @@ function resetScene() {
     resetMechanics();
 }
 
+// ── Emergency Failsafe ────────────────────────────────────
+// If ANYTHING crashes before or during init, dismiss loading screen
+// after 8s so the user is never permanently stuck.
+const _emergencyTimer = setTimeout(() => {
+    const ls = document.getElementById('loading-screen');
+    if (ls) { ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
+}, 8000);
+
 // ── Init ───────────────────────────────────────────────────
-function init() {
+async function init() {
     initScene();
 
     // Environment layers (order doesn't matter — additive blending)
@@ -59,7 +67,12 @@ function init() {
     createSpaceship(scene);
     createTrail(scene);
     preloadExplosions(scene);
-    loadNeonText(scene);
+
+    // Await font load — this is what controls the loading screen dismissal.
+    // loadNeonText has its own 5s internal failsafe; we also have the 8s
+    // emergency timer above as a final backstop.
+    await loadNeonText(scene);
+    clearTimeout(_emergencyTimer);
 
     setupInput({ shipGroup, ensureAudio });
     setupUI(audio, ensureAudio);
