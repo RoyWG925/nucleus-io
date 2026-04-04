@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TOY_BOX.IO | DIMENSION_SHIFT</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;700;900&amp;family=Plus+Jakarta+Sans:wght@400;500;700&amp;family=Space+Grotesk:wght@300;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface": "#ecddf3",
+              "primary": "#ffb3ae",
+              "primary-fixed-dim": "#ffb3ae",
+              "secondary-fixed": "#ffd7ef",
+              "surface-dim": "#18101f",
+              "on-secondary": "#5e0051",
+              "surface-bright": "#3f3646",
+              "on-primary-container": "#5c0008",
+              "surface-container-high": "#2f2737",
+              "surface-container-lowest": "#130b1a",
+              "inverse-surface": "#ecddf3",
+              "tertiary-container": "#8382ff",
+              "on-tertiary-container": "#140094",
+              "surface-tint": "#ffb3ae",
+              "tertiary-fixed": "#e2dfff",
+              "surface-variant": "#3a3142",
+              "tertiary": "#c2c1ff",
+              "primary-fixed": "#ffdad7",
+              "surface-container": "#251c2c",
+              "on-error-container": "#ffdad6",
+              "on-background": "#ecddf3",
+              "on-primary-fixed": "#410004",
+              "inverse-on-surface": "#362d3d",
+              "on-surface-variant": "#e4beba",
+              "background": "#18101f",
+              "outline": "#ab8986",
+              "error-container": "#93000a",
+              "on-tertiary-fixed-variant": "#332dbc",
+              "on-secondary-fixed": "#3a0031",
+              "on-secondary-fixed-variant": "#80146f",
+              "on-primary": "#68000b",
+              "error": "#ffb4ab",
+              "on-tertiary": "#1800a7",
+              "outline-variant": "#5b403e",
+              "primary-container": "#ff5352",
+              "secondary": "#ffade5",
+              "surface-container-low": "#201828",
+              "on-secondary-container": "#ff94e2",
+              "inverse-primary": "#ba1724",
+              "surface": "#18101f",
+              "tertiary-fixed-dim": "#c2c1ff",
+              "on-primary-fixed-variant": "#930014",
+              "secondary-fixed-dim": "#ffade5",
+              "on-tertiary-fixed": "#0c006b",
+              "secondary-container": "#831771",
+              "surface-container-highest": "#3a3142",
+              "on-error": "#690005"
+            },
+            fontFamily: {
+              "headline": ["Epilogue"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .isometric-view {
+            transform: rotateX(55deg) rotateZ(-45deg);
+            transform-style: preserve-3d;
+        }
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(91, 64, 62, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(91, 64, 62, 0.15) 1px, transparent 1px);
+        }
+        .toy-car {
+            transform: translateZ(10px);
+        }
+        .glow-island {
+            box-shadow: 0 0 60px 10px rgba(255, 83, 82, 0.3), inset 0 0 40px rgba(255, 173, 229, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body overflow-hidden h-screen w-screen selection:bg-secondary selection:text-on-secondary">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 py-6 max-w-full bg-transparent drop-shadow-md">
+<div class="text-2xl font-black text-[#ff5352] drop-shadow-[0_0_10px_rgba(255,83,82,0.4)] font-headline tracking-tighter uppercase">
+            TOY_BOX.IO
+        </div>
+<nav class="hidden md:flex items-center gap-10 font-headline tracking-tighter font-black uppercase text-sm">
+<a class="text-[#ffade5] border-b-2 border-[#ffade5] pb-1 hover:scale-105 transition-transform" href="#">PLAYGROUND</a>
+<a class="text-[#ffb3ae]/70 hover:text-[#ffb3ae] hover:scale-105 transition-all" href="#">PROJECTS</a>
+<a class="text-[#ffb3ae]/70 hover:text-[#ffb3ae] hover:scale-105 transition-all" href="#">ARCHIVE</a>
+<a class="text-[#ffb3ae]/70 hover:text-[#ffb3ae] hover:scale-105 transition-all" href="#">INFO</a>
+</nav>
+<div class="flex items-center gap-6">
+<button class="text-[#ffb3ae] hover:scale-110 transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="volume_up">volume_up</span>
+</button>
+<button class="text-[#ffb3ae] hover:scale-110 transition-transform active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- SideNavBar (HUD Style) -->
+<aside class="fixed right-6 top-1/2 -translate-y-1/2 rounded-2xl border-[1.5px] border-[#ffb3ae]/15 bg-[#3a3142]/60 backdrop-blur-xl flex flex-col p-4 gap-6 w-20 items-center z-40 shadow-[0_0_20px_0px_rgba(194,193,255,0.2)]">
+<div class="flex flex-col items-center gap-1 mb-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary overflow-hidden">
+<img alt="User Avatar" class="w-full h-full" data-alt="Stylized pixel art avatar of a user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPyKGNSS-Z-9ItS-sMkKDEioIec8zV7op_si2MDwdxBCNVtZ9SunI1VhriXI-twX9lci1M-FHCAP3vmLsvOUjRWFX0m6UzMkl-BPPQkG3kInBzKvUkzPaCNhs3Xl8XEmg5IykWRNHimnivGzQpM-1_DZrnNugCxOyjFGKGq3vVcHZFNuWK3qhFqWwq6EQYEJqXYbWHN90AstQ68hpawlkIrhV65UtLqm3GsF05bCGD11rKAgMx6dLCOUAsZEmM1i-9es-72MMHxQy5"/>
+</div>
+<span class="text-[8px] font-label tracking-widest text-[#ffade5]">DASHBOARD</span>
+</div>
+<nav class="flex flex-col gap-5">
+<button class="flex flex-col items-center p-2 bg-[#ff5352] text-[#5c0008] rounded-lg shadow-[0_0_15px_rgba(255,83,82,0.5)] transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="directions_car">directions_car</span>
+<span class="text-[8px] font-label mt-1">VEHICLE</span>
+</button>
+<button class="flex flex-col items-center p-2 text-[#c2c1ff] opacity-60 hover:opacity-100 transition-all hover:-translate-x-1">
+<span class="material-symbols-outlined text-lg" data-icon="texture">texture</span>
+<span class="text-[8px] font-label mt-1">TEXTURE</span>
+</button>
+<button class="flex flex-col items-center p-2 text-[#c2c1ff] opacity-60 hover:opacity-100 transition-all hover:-translate-x-1">
+<span class="material-symbols-outlined text-lg" data-icon="south">south</span>
+<span class="text-[8px] font-label mt-1">GRAVITY</span>
+</button>
+<button class="flex flex-col items-center p-2 text-[#c2c1ff] opacity-60 hover:opacity-100 transition-all hover:-translate-x-1">
+<span class="material-symbols-outlined text-lg" data-icon="music_note">music_note</span>
+<span class="text-[8px] font-label mt-1">AUDIO</span>
+</button>
+</nav>
+<button class="mt-4 p-2 text-[8px] font-label text-center border border-[#ffade5]/30 rounded-md hover:bg-[#ff5352] hover:text-white transition-colors">
+            REBOOT<br/>SYSTEM
+        </button>
+</aside>
+<!-- Main 3D Canvas -->
+<main class="relative w-full h-full flex items-center justify-center overflow-hidden">
+<!-- Environment Background -->
+<div class="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
+<!-- Isometric Diorama Container -->
+<div class="relative w-[1200px] h-[800px] flex items-center justify-center perspective-[2000px]">
+<div class="isometric-view relative w-[600px] h-[600px] bg-[#251c2c] rounded-full glow-island border-8 border-surface-container-highest/50">
+<!-- Center Spotlight -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-primary-container/20 blur-3xl"></div>
+<!-- Tree (Abstract Low-Poly) -->
+<div class="absolute top-[20%] left-[30%] w-32 h-64 flex flex-col items-center" style="transform: rotateX(-90deg) rotateY(45deg); transform-origin: bottom;">
+<div class="w-4 h-32 bg-surface-container-high rounded-full"></div>
+<div class="absolute -top-12 w-48 h-48 bg-secondary/40 rounded-full blur-xl animate-pulse"></div>
+<div class="absolute -top-8 w-40 h-40 bg-secondary rounded-full opacity-80 border-2 border-primary/20"></div>
+</div>
+<!-- Street Lamp -->
+<div class="absolute top-[40%] right-[25%] w-2 h-48 bg-surface-variant" style="transform: rotateX(-90deg) rotateY(45deg); transform-origin: bottom;">
+<div class="absolute -top-2 -left-4 w-12 h-6 bg-surface-variant rounded-full">
+<div class="absolute bottom-0 w-8 h-8 left-2 bg-primary blur-md rounded-full"></div>
+</div>
+</div>
+<!-- The Vehicle (Geometric Blocks) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-32 flex items-center justify-center" style="transform-style: preserve-3d;">
+<!-- Body Base -->
+<div class="w-32 h-20 bg-primary-container rounded-lg border-b-8 border-on-primary shadow-2xl relative">
+<!-- Roof/Cabin -->
+<div class="absolute top-2 left-6 w-16 h-12 bg-surface-dim/80 rounded-md border border-primary/40 transform translate-z-10"></div>
+<!-- Wheels -->
+<div class="absolute -bottom-4 -left-2 w-10 h-10 bg-surface-container-lowest rounded-full border-4 border-surface-variant"></div>
+<div class="absolute -bottom-4 -right-2 w-10 h-10 bg-surface-container-lowest rounded-full border-4 border-surface-variant"></div>
+<!-- Headlights -->
+<div class="absolute top-6 -right-1 w-4 h-8 bg-primary blur-[2px] rounded-full"></div>
+</div>
+</div>
+<!-- Ground Details -->
+<div class="absolute bottom-[20%] right-[30%] w-16 h-8 bg-surface-container-highest/30 rounded-full blur-sm"></div>
+<div class="absolute top-[15%] left-[45%] w-12 h-6 bg-surface-container-highest/40 rounded-full blur-sm"></div>
+</div>
+</div>
+<!-- UI Callout Overlay -->
+<div class="absolute bottom-1/4 left-1/2 -translate-x-1/2 pointer-events-none flex flex-col items-center">
+<div class="relative">
+<!-- Curved Arrow (SVG) -->
+<svg class="absolute -left-20 -top-10 w-24 h-24 text-tertiary" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 100 100">
+<path d="M10,80 C40,80 60,40 85,20" stroke-dasharray="4 2"></path>
+<polygon fill="currentColor" points="85,20 75,25 82,32"></polygon>
+</svg>
+<div class="font-label text-tertiary text-2xl tracking-[0.2em] animate-bounce">
+                    CLICK TO START
+                </div>
+<div class="mt-2 h-1 w-full bg-gradient-to-r from-transparent via-tertiary to-transparent opacity-50"></div>
+</div>
+</div>
+</main>
+<!-- Footer (HUD Bottom) -->
+<footer class="fixed bottom-6 left-8 flex gap-8 items-center z-50">
+<div class="font-label text-[10px] uppercase tracking-[0.2em] text-[#c2c1ff]/40">
+            © 2024 DIMENSION_SHIFT
+        </div>
+<div class="flex gap-6 font-label text-[10px] uppercase tracking-[0.2em] text-[#c2c1ff]">
+<a class="hover:text-[#ffade5] transition-colors" href="#">TELEPORT</a>
+<a class="hover:text-[#ffade5] transition-colors" href="#">SIGNAL</a>
+<a class="hover:text-[#ffade5] transition-colors" href="#">COORDINATES</a>
+</div>
+</footer>
+<!-- Experimental Grid Overlay (Atmospheric) -->
+<div class="fixed inset-0 pointer-events-none border-[40px] border-background z-[60] mix-blend-multiply opacity-20"></div>
+</body></html>

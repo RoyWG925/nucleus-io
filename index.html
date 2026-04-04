@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>NUCLEUS.IO | Roy Wang</title>
+    <meta name="description" content="NUCLEUS.IO — Roy Wang's interactive 3D portfolio. Fly through space, discover projects, and explore creative engineering."/>
+    <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;500;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+    <div id="three-container"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-logo">NUCLEUS.IO</div>
+            <div class="loader-bar"><div id="loader-fill" class="loader-fill"></div></div>
+            <div class="loader-text">INITIALIZING DIMENSION...</div>
+        </div>
+    </div>
+
+    <!-- Top App Bar -->
+    <header id="top-app-bar">
+        <div class="logo">NUCLEUS.IO</div>
+        <nav class="main-nav">
+            <a href="#" class="nav-link active" data-view="playground">PLAYGROUND</a>
+            <a href="#" class="nav-link" data-view="projects">PROJECTS</a>
+            <a href="#" class="nav-link" data-view="archive">ARCHIVE</a>
+            <a href="#" class="nav-link" data-view="info">INFO</a>
+        </nav>
+        <div class="header-actions">
+            <button id="btn-volume" class="icon-btn" aria-label="Volume">
+                <span class="material-symbols-outlined">volume_up</span>
+            </button>
+            <button id="btn-settings" class="icon-btn" aria-label="Settings">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Side HUD -->
+    <aside id="side-hud" class="side-hud">
+        <div class="hud-avatar-group">
+            <div class="hud-avatar">
+                <span class="material-symbols-outlined" style="font-size:20px;line-height:36px;width:100%;text-align:center;color:var(--primary)">person</span>
+            </div>
+            <span class="hud-label pink">HANGAR</span>
+        </div>
+        <nav class="hud-nav">
+            <button class="hud-btn active" data-tool="ship" data-ship="default" title="Viper MK-I">
+                <span class="material-symbols-outlined">rocket_launch</span>
+                <span class="hud-btn-label">VIPER</span>
+            </button>
+            <button class="hud-btn" data-tool="ship" data-ship="stealth" title="Phantom X">
+                <span class="material-symbols-outlined">flight</span>
+                <span class="hud-btn-label">PHANTOM</span>
+            </button>
+            <button class="hud-btn" data-tool="ship" data-ship="heavy" title="Titan Heavy">
+                <span class="material-symbols-outlined">shield</span>
+                <span class="hud-btn-label">TITAN</span>
+            </button>
+            <button id="btn-gravity" class="hud-btn" data-tool="gravity">
+                <span class="material-symbols-outlined">south</span>
+                <span class="hud-btn-label">GRAVITY</span>
+            </button>
+        </nav>
+        <button id="hud-reboot" class="hud-reboot">REBOOT<br/>SYSTEM</button>
+    </aside>
+
+    <!-- Controls Hint -->
+    <div id="controls-hint" class="controls-hint">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> FLY &nbsp;·&nbsp; <kbd>SHIFT</kbd> UP &nbsp;·&nbsp; <kbd>CTRL</kbd> DOWN &nbsp;·&nbsp; <kbd>SPACE</kbd> BOOST &nbsp;·&nbsp; <kbd>R</kbd> RESET &nbsp;·&nbsp; 🖱️ AIM
+    </div>
+
+    <!-- Speed Display -->
+    <div id="speed-display" class="speed-display">
+        <div id="speed-value" class="speed-value">0</div>
+        <div class="speed-unit">M/S</div>
+    </div>
+
+    <!-- Game Log (GC / Bug messages) -->
+    <div id="game-log" class="game-log"></div>
+
+    <!-- Tensor Counter -->
+    <div id="tensor-counter" class="tensor-counter">
+        <span class="tensor-icon">◇</span>
+        <span id="tensor-text">Epoch: 0 / 0 (Model Training...)</span>
+    </div>
+
+    <!-- Project Detail Panel (shown on orb collection) -->
+    <div id="project-panel" class="project-panel">
+        <div class="pp-header">
+            <div class="pp-name">Project Name</div>
+            <button class="pp-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="pp-tagline">"Tagline here"</div>
+        <div class="pp-tech">Tech stack</div>
+        <div class="pp-desc">Description</div>
+        <div class="pp-badges"></div>
+        <div class="pp-links"></div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel hidden">
+        <div class="sp-header">
+            <h3>SETTINGS</h3>
+            <button id="sp-close" class="icon-btn">&times;</button>
+        </div>
+        <div class="sp-section">
+            <label class="sp-label">RENDER QUALITY</label>
+            <div class="sp-toggle-group">
+                <button class="sp-toggle active" data-quality="high">HIGH</button>
+                <button class="sp-toggle" data-quality="medium">MED</button>
+                <button class="sp-toggle" data-quality="low">LOW</button>
+            </div>
+        </div>
+        <div class="sp-section">
+            <label class="sp-label">MASTER VOLUME</label>
+            <input id="volume-slider" type="range" min="0" max="100" value="70" class="sp-slider"/>
+        </div>
+        <div class="sp-section">
+            <label class="sp-label">BLOOM INTENSITY</label>
+            <input id="bloom-slider" type="range" min="0" max="100" value="50" class="sp-slider"/>
+        </div>
+    </div>
+
+    <!-- INFO Overlay (About Me) -->
+    <div id="info-overlay" class="info-overlay hidden">
+        <div class="io-header">
+            <h2>ABOUT THE PILOT</h2>
+            <button id="io-close" class="icon-btn">&times;</button>
+        </div>
+        <div class="io-content">
+            <div class="io-name">Roy Wang <span class="io-cn">王語揚</span></div>
+            <div class="io-role">AI Application Engineer</div>
+            <div class="io-tagline">Bridging machine learning, full-stack development, and human-centered design.</div>
+            <div class="io-divider"></div>
+            <div class="io-bio">
+                B.S. in Learning Sciences @ National Taiwan Normal University.
+                Building at the intersection of NLP, Computer Vision, creative coding, and product design.
+            </div>
+            <div class="io-skills">
+                <span class="io-skill">PyTorch</span>
+                <span class="io-skill">React</span>
+                <span class="io-skill">Three.js</span>
+                <span class="io-skill">BERT</span>
+                <span class="io-skill">Firebase</span>
+                <span class="io-skill">Godot</span>
+                <span class="io-skill">WebGL</span>
+            </div>
+            <div class="io-links">
+                <a href="https://github.com/RoyWG925" target="_blank" rel="noopener" class="io-link">
+                    <span class="material-symbols-outlined">code</span> GitHub
+                </a>
+                <a href="mailto:jg971402@gmail.com" class="io-link">
+                    <span class="material-symbols-outlined">mail</span> Email
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ARCHIVE Overlay (Collection Status) -->
+    <div id="archive-overlay" class="archive-overlay hidden">
+        <div class="ao-header">
+            <h2>COLLECTION LOG</h2>
+            <button id="ao-close" class="icon-btn">&times;</button>
+        </div>
+        <div id="ao-list" class="ao-list">
+            <!-- JS will populate collection items -->
+        </div>
+        <div class="ao-footer">
+            <span class="material-symbols-outlined">database</span> Fly through orbs to collect projects
+        </div>
+    </div>
+
+    <!-- Cinematic 2D HUD (Dual Mode UX) -->
+    <div id="project-nav-overlay" class="project-nav-overlay hidden">
+        <div class="pnv-header">
+            <h2>PROJECT ARCHIVES</h2>
+            <button id="pnv-close" class="icon-btn">&times;</button>
+        </div>
+        <div id="pnv-list" class="pnv-list">
+            <!-- JS will populate cinematic buttons here -->
+        </div>
+        <div class="pnv-footer">
+            <span class="material-symbols-outlined">auto_awesome</span> Cinematic Auto-Navigation
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bottom-hud">
+        <div class="copyright">© 2025 NUCLEUS.IO — Roy Wang</div>
+        <div class="footer-links">
+            <a href="https://github.com/RoyWG925" target="_blank" rel="noopener">GITHUB</a>
+            <a href="mailto:jg971402@gmail.com">CONTACT</a>
+        </div>
+    </footer>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
