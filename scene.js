@@ -103,8 +103,50 @@ const FilmGrainShader = {
     `,
 };
 
+// ── Custom Shader: Warp Speed (Radial Stretch) ─────────────
+const WarpSpeedShader = {
+    uniforms: {
+        tDiffuse: { value: null },
+        uSpeed:   { value: 0.0 }
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uSpeed;
+        varying vec2 vUv;
+        void main() {
+            vec2 center = vec2(0.5, 0.5);
+            vec2 toCenter = vUv - center;
+            
+            // Start stretching only when speed > 60
+            float stretchFactor = max(0.0, (uSpeed - 60.0)) * 0.0006;
+            
+            vec4 color = vec4(0.0);
+            float totalWeight = 0.0;
+            const int samples = 12;
+            
+            for(int i = 0; i < samples; i++) {
+                float f = float(i) / float(samples - 1);
+                float weight = 1.0 - f;
+                
+                // Sample along the radial line toward the center
+                vec2 sampleUv = vUv - toCenter * stretchFactor * f;
+                color += texture2D(tDiffuse, sampleUv) * weight;
+                totalWeight += weight;
+            }
+            gl_FragColor = color / totalWeight;
+        }
+    `
+};
+
 // ── Exported State ─────────────────────────────────────────
-export let scene, camera, renderer, composer, clock;
+export let scene, camera, renderer, composer, clock, warpPass;
 
 // Keep references for runtime updates
 let bloomPass, filmGrainPass;
@@ -168,7 +210,11 @@ export function initScene() {
     filmGrainPass = new ShaderPass(FilmGrainShader);
     composer.addPass(filmGrainPass);
 
-    // 6 — Output (tone-mapping / color-space conversion)
+    // 6 — Warp Speed (radial stretch during boost)
+    warpPass = new ShaderPass(WarpSpeedShader);
+    composer.addPass(warpPass);
+
+    // 7 — Output (tone-mapping / color-space conversion)
     composer.addPass(new OutputPass());
 
     // ─── Lighting: Cinematic 3-Point + Volumetric Accents ──
