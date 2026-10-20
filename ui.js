@@ -74,11 +74,12 @@ export function setupUI(audio, ensureAudio) {
     }
 
     function closeProjectPanel() {
-        if (!ppPanel?.classList.contains('visible')) return;
-        ppPanel.classList.remove('visible');
-        clearTimeout(ppPanel._hideTimer);
         setCinematicTarget(null, camera);
+        clearTimeout(ppPanel?._hideTimer);
+        ppPanel?.classList.remove('visible');
+        syncOverlayState();
     }
+    window.closeProjectPanel = closeProjectPanel;
 
     function renderArchiveList() {
         const aoList = document.getElementById('ao-list');
