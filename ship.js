@@ -7,7 +7,7 @@ import {
     COLORS, SHIP_SPEED, BOOST_MULT, ROTATE_SPEED,
     CAM_LERP, CAM_OFFSET, TRAIL_LEN,
 } from './constants.js';
-import { keys } from './input.js';
+import { keys, touchState } from './input.js';
 
 // ── Exported state ─────────────────────────────────────────
 export let shipGroup;
@@ -220,6 +220,15 @@ export function updateShip(dt, audio, onReset) {
     if (keys['KeyE']) shipGroup.rotateOnAxis(ROLL_AXIS, -rot);
     if (keys['ShiftLeft']  || keys['ShiftRight'])   shipVelocity.y += speed * 0.6;
     if (keys['ControlLeft']|| keys['ControlRight'])  shipVelocity.y -= speed * 0.6;
+
+    // Touch analog joystick (moveY > 0 forward, moveY < 0 reverse, moveX turn)
+    if (Math.abs(touchState.moveY) > 0.08) {
+        const thrustMult = touchState.moveY > 0 ? touchState.moveY : touchState.moveY * 0.5;
+        shipVelocity.addScaledVector(forward, speed * thrustMult);
+    }
+    if (Math.abs(touchState.moveX) > 0.08) {
+        shipGroup.rotateOnWorldAxis(up, -rot * touchState.moveX);
+    }
 
     shipGroup.position.addScaledVector(shipVelocity, dt);
 
