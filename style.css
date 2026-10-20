@@ -795,3 +795,30 @@ body:has(#project-nav-overlay:not(.hidden), #info-overlay:not(.hidden), #archive
     .touch-joystick { width: 98px; height: 98px; }
     .touch-joystick-knob { width: 38px; height: 38px; }
 }
+
+@media (pointer: coarse), (max-width: 768px) {
+    .nav-link,
+    .icon-btn,
+    .pp-close,
+    .sp-toggle,
+    .pp-link,
+    .io-link,
+    .pnv-item,
+    .touch-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .nav-link,
+    .icon-btn,
+    .pp-close,
+    .io-link,
+    .pp-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .nav-link { padding-bottom: 0; }
+    .sp-toggle { padding: 10px 8px; }
+    .touch-btn,
+    .touch-btn-reset { height: auto; }
+}
