@@ -279,6 +279,23 @@ img { display: block; max-width: 100%; }
     filter: contrast(1.1) brightness(0.9);
 }
 
+.project-panel.no-preview .pp-image {
+    display: none;
+}
+
+.project-panel.no-preview .pp-header {
+    position: relative;
+    align-items: center;
+    padding: 20px 24px 16px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--pp-accent) 18%, rgba(15, 10, 20, 0.95)), rgba(15, 10, 20, 0.4));
+    border-bottom: 1px solid color-mix(in srgb, var(--pp-accent) 25%, rgba(255, 255, 255, 0.06));
+}
+
+.project-panel.no-preview .pp-content {
+    top: 0;
+    padding-top: 18px;
+}
+
 .pp-content {
     padding: 0 24px 24px; position: relative; top: -20px;
 }
@@ -436,6 +453,13 @@ img { display: block; max-width: 100%; }
     color: #fff;
     transform: scale(0.95);
     box-shadow: 0 0 16px rgba(255, 83, 82, 0.65);
+}
+
+body.overlay-open .touch-controls,
+body.overlay-open .touch-controls *,
+body:has(#project-nav-overlay:not(.hidden), #info-overlay:not(.hidden), #archive-overlay:not(.hidden), #settings-panel:not(.hidden), #project-panel.visible, #dev-terminal:not(.hidden)) .touch-controls,
+body:has(#project-nav-overlay:not(.hidden), #info-overlay:not(.hidden), #archive-overlay:not(.hidden), #settings-panel:not(.hidden), #project-panel.visible, #dev-terminal:not(.hidden)) .touch-controls * {
+    pointer-events: none;
 }
 
 /* ===================== CINEMATIC HUD (DUAL MODE) ===================== */
