@@ -6,7 +6,7 @@ import { setGravity, getGravity } from './physics.js';
 import { PROJECT_ORBS } from './constants.js';
 import { projectOrbs } from './mechanics.js';
 import { resolveShipVariant, setCinematicTarget, setShipVariant } from './ship.js';
-import { camera } from './scene.js';
+import { camera, getRenderQuality, syncQualityButtons, writeStoredQuality } from './scene.js';
 
 /**
  * Wire up all HUD buttons.
@@ -158,12 +158,16 @@ export function setupUI(audio, ensureAudio) {
         window.dispatchEvent(new CustomEvent('updateBloomIntensity', { detail: val }));
     });
 
+    syncQualityButtons(getRenderQuality());
+
     document.querySelectorAll('.sp-toggle').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
+            const quality = btn.dataset.quality;
+            if (!quality) return;
             audio.playUIClick();
-            document.querySelectorAll('.sp-toggle').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            window.dispatchEvent(new CustomEvent('updateRenderQuality', { detail: e.target.dataset.quality }));
+            writeStoredQuality(quality);
+            syncQualityButtons(quality);
+            window.dispatchEvent(new CustomEvent('updateRenderQuality', { detail: quality }));
         });
     });
 

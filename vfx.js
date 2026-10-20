@@ -6,15 +6,18 @@
  */
 import * as THREE from 'three';
 import { COLORS, SPACE } from './constants.js';
+import { getQualityConfig, getRenderQuality } from './scene.js';
 
 // ── Internal state ─────────────────────────────────────────
 let explosions = [];
 const EXPLOSION_PARTICLES = 40;
 const EXPLOSION_MAX_AGE = 2.5;
 const EXPLOSION_POOL_CAP = 36;
+let starfieldPoints = [];
 let nebulaGroup = null;
 let dustParticles = null;
 let gridFloorMesh = null;
+let distantGalaxyMeshes = [];
 let cosmicTime = 0;
 
 // Macro-cosmic elements
@@ -24,6 +27,54 @@ let cosmicFilaments = [];
 let lightPillars = [];
 let cosmicHorizonArcs = [];
 let deepFieldHalos = [];
+
+export function applyVfxQuality(quality = getRenderQuality()) {
+    const low = Boolean(getQualityConfig(quality).vfxLowDensity);
+    for (const pts of starfieldPoints) {
+        const full = pts.userData.fullCount || 0;
+        pts.geometry.setDrawRange(0, low ? Math.ceil(full * 0.45) : full);
+    }
+    if (nebulaGroup) {
+        for (const child of nebulaGroup.children) {
+            child.visible = !low || Boolean(child.userData.keepOnLow);
+        }
+    }
+    if (dustParticles) {
+        const full = dustParticles.userData.fullCount || 0;
+        const active = low ? Math.ceil(full * 0.25) : full;
+        dustParticles.userData.activeCount = active;
+        dustParticles.geometry.setDrawRange(0, active);
+    }
+    for (const mesh of distantGalaxyMeshes) {
+        mesh.visible = !low || Boolean(mesh.userData.keepOnLow);
+    }
+    for (const mesh of cosmicHorizonArcs) {
+        mesh.visible = !low;
+    }
+    for (const mesh of deepFieldHalos) {
+        mesh.visible = !low;
+    }
+    for (const obj of starClusterMeshes) {
+        if (obj.isPoints) {
+            const full = obj.userData.fullCount || 0;
+            obj.geometry.setDrawRange(0, low ? Math.ceil(full * 0.5) : full);
+        } else {
+            obj.visible = !low;
+        }
+    }
+    for (const mesh of cosmicFilaments) {
+        mesh.visible = !low;
+    }
+    for (const mesh of lightPillars) {
+        mesh.visible = !low;
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('updateRenderQuality', (e) => {
+        applyVfxQuality(e.detail);
+    });
+}
 
 // ── Multi-Layer Starfield ──────────────────────────────────
 /**
@@ -71,11 +122,15 @@ export function createStarfield(scene) {
             depthWrite: false,
         });
 
-        scene.add(new THREE.Points(geo, mat));
+        const pts = new THREE.Points(geo, mat);
+        pts.userData.fullCount = layer.count;
+        scene.add(pts);
+        starfieldPoints.push(pts);
     }
 
     // ── Bright "hero" stars (handful of very large, bright specks) ──
     createHeroStars(scene);
+    applyVfxQuality();
 }
 
 /**
@@ -113,7 +168,10 @@ function createHeroStars(scene) {
         depthWrite: false,
     });
 
-    scene.add(new THREE.Points(geo, mat));
+    const pts = new THREE.Points(geo, mat);
+    pts.userData.fullCount = count;
+    scene.add(pts);
+    starfieldPoints.push(pts);
 }
 
 // ── Nebula Clouds ──────────────────────────────────────────
@@ -134,7 +192,8 @@ export function createNebulaClouds(scene) {
         { pos: [350, -120, -100], scale: 220, color: SPACE.nebula3, rot: [0.6, 0.1, -0.4], opacity: 0.055 },
     ];
 
-    for (const cfg of nebulaConfigs) {
+    for (let cfgIdx = 0; cfgIdx < nebulaConfigs.length; cfgIdx++) {
+        const cfg = nebulaConfigs[cfgIdx];
         // Use two overlapping planes at slight angles for volume
         for (let j = 0; j < 2; j++) {
             const geo = new THREE.PlaneGeometry(cfg.scale, cfg.scale);
@@ -217,11 +276,13 @@ export function createNebulaClouds(scene) {
                 cfg.rot[1] + (j * 0.2),
                 cfg.rot[2],
             );
+            mesh.userData.keepOnLow = cfgIdx < 3 && j === 0;
             nebulaGroup.add(mesh);
         }
     }
 
     scene.add(nebulaGroup);
+    applyVfxQuality();
 }
 
 // ── Cosmic Dust Particles ──────────────────────────────────
@@ -259,7 +320,10 @@ export function createCosmicDust(scene) {
 
     dustParticles = new THREE.Points(geo, mat);
     dustParticles.userData.velocities = vels;
+    dustParticles.userData.fullCount = count;
+    dustParticles.userData.activeCount = count;
     scene.add(dustParticles);
+    applyVfxQuality();
 }
 
 // ── Grid Floor (Shader-Powered) ────────────────────────────
@@ -416,12 +480,15 @@ export function createDistantGalaxies(scene) {
         mesh.lookAt(0, 0, 0);   // billboarding toward the center
         mesh.rotateZ(Math.random() * Math.PI * 2);
 
+        mesh.userData.keepOnLow = i % 2 === 0;
         scene.add(mesh);
+        distantGalaxyMeshes.push(mesh);
     }
 
     // Extra macro depth layers (low object count, high scale)
     createCosmicHorizonArcs(scene);
     createDeepFieldHalos(scene);
+    applyVfxQuality();
 }
 
 // ── Cosmic Horizon Arcs (mid-far colossal structures) ──────
@@ -681,6 +748,7 @@ export function createStarClusters(scene) {
         });
 
         const pts = new THREE.Points(geo, mat);
+        pts.userData.fullCount = cfg.count;
         scene.add(pts);
         starClusterMeshes.push(pts);
 
@@ -725,6 +793,7 @@ export function createStarClusters(scene) {
         scene.add(glowMesh);
         starClusterMeshes.push(glowMesh);
     }
+    applyVfxQuality();
 }
 
 // ── Cosmic Filaments (gas streams) ─────────────────────────
@@ -821,6 +890,7 @@ export function createCosmicFilaments(scene) {
         scene.add(mesh);
         cosmicFilaments.push(mesh);
     }
+    applyVfxQuality();
 }
 
 // ── Volumetric Light Pillars ───────────────────────────────
@@ -891,6 +961,7 @@ export function createLightPillars(scene) {
         scene.add(mesh2);
         lightPillars.push(mesh2);
     }
+    applyVfxQuality();
 }
 
 // ── Update Environment (call per frame) ────────────────────
@@ -905,6 +976,7 @@ export function updateEnvironment(dt) {
     // Nebula cloud shader time
     if (nebulaGroup) {
         for (const child of nebulaGroup.children) {
+            if (!child.visible) continue;
             if (child.material && child.material.uniforms && child.material.uniforms.uTime) {
                 child.material.uniforms.uTime.value = cosmicTime;
             }
@@ -917,7 +989,7 @@ export function updateEnvironment(dt) {
     if (dustParticles) {
         const posArr = dustParticles.geometry.attributes.position.array;
         const vels   = dustParticles.userData.velocities;
-        const count  = posArr.length / 3;
+        const count  = dustParticles.userData.activeCount || (posArr.length / 3);
         for (let i = 0; i < count; i++) {
             posArr[i * 3]     += vels[i * 3]     * dt;
             posArr[i * 3 + 1] += vels[i * 3 + 1] * dt;
@@ -944,7 +1016,7 @@ export function updateEnvironment(dt) {
     // ── Macro-cosmic element updates ──
 
     // Nebula ring — slow rotation + shader time
-    if (nebulaRingMesh) {
+    if (nebulaRingMesh && nebulaRingMesh.visible) {
         nebulaRingMesh.rotation.z += dt * 0.004;
         nebulaRingMesh.rotation.y += dt * 0.001;
         if (nebulaRingMesh.material.uniforms) {
@@ -954,6 +1026,7 @@ export function updateEnvironment(dt) {
 
     // Star cluster core glows — tick time for pulse
     for (const obj of starClusterMeshes) {
+        if (!obj.visible) continue;
         if (obj.material && obj.material.uniforms && obj.material.uniforms.uTime) {
             obj.material.uniforms.uTime.value = cosmicTime;
         }
@@ -961,6 +1034,7 @@ export function updateEnvironment(dt) {
 
     // Cosmic filaments — shader time
     for (const mesh of cosmicFilaments) {
+        if (!mesh.visible) continue;
         if (mesh.material && mesh.material.uniforms) {
             mesh.material.uniforms.uTime.value = cosmicTime;
         }
@@ -968,6 +1042,7 @@ export function updateEnvironment(dt) {
 
     // Light pillars — shader time
     for (const mesh of lightPillars) {
+        if (!mesh.visible) continue;
         if (mesh.material && mesh.material.uniforms) {
             mesh.material.uniforms.uTime.value = cosmicTime;
         }
@@ -976,6 +1051,7 @@ export function updateEnvironment(dt) {
     // Horizon arcs — very slow drift for parallax scale
     for (let i = 0; i < cosmicHorizonArcs.length; i++) {
         const mesh = cosmicHorizonArcs[i];
+        if (!mesh.visible) continue;
         mesh.rotation.z += dt * (0.0007 + i * 0.00015);
         mesh.rotation.y += dt * 0.00025;
         if (mesh.material && mesh.material.uniforms) {
@@ -985,6 +1061,7 @@ export function updateEnvironment(dt) {
 
     // Deep-field halos — nearly static breathing to keep scene alive
     for (const mesh of deepFieldHalos) {
+        if (!mesh.visible) continue;
         if (mesh.material && mesh.material.uniforms) {
             mesh.material.uniforms.uTime.value = cosmicTime;
         }

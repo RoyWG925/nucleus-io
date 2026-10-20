@@ -4,6 +4,7 @@
  */
 import * as THREE from 'three';
 import { PROJECT_ORBS } from './constants.js';
+import { getQualityConfig, getRenderQuality } from './scene.js';
 
 let _scene, _ship, _audio, _explode;
 const GC_POS = new THREE.Vector3(38, 5, 28);
@@ -19,6 +20,19 @@ const transientLights = [];
 
 // ── Exported for raycasting ────────────────────────────────
 export { projectOrbs };
+
+export function applyMechanicsQuality(quality = getRenderQuality()) {
+    const usePhysical = Boolean(getQualityConfig(quality).physicalShells);
+    for (const orb of projectOrbs) {
+        orb.shell.material = usePhysical ? orb.shellHighMat : orb.shellLowMat;
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('updateRenderQuality', (e) => {
+        applyMechanicsQuality(e.detail);
+    });
+}
 
 // ── Init ───────────────────────────────────────────────────
 export function initMechanics(deps) {
@@ -150,7 +164,7 @@ function buildProjectOrbs() {
         const orbGroup = new THREE.Group();
 
         // ── Outer glass shell ──
-        const shellMat = new THREE.MeshPhysicalMaterial({
+        const shellHighMat = new THREE.MeshPhysicalMaterial({
             color: col,
             emissive: col,
             emissiveIntensity: 0.15,
@@ -164,7 +178,21 @@ function buildProjectOrbs() {
             clearcoatRoughness: 0.1,
             side: THREE.DoubleSide,
         });
-        const shell = new THREE.Mesh(new THREE.SphereGeometry(1.2, 24, 24), shellMat);
+        const shellLowMat = new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: 0.35,
+            metalness: 0.25,
+            roughness: 0.15,
+            transparent: true,
+            opacity: 0.28,
+            side: THREE.FrontSide,
+        });
+        const usePhysical = Boolean(getQualityConfig(getRenderQuality()).physicalShells);
+        const shell = new THREE.Mesh(
+            new THREE.SphereGeometry(1.2, 24, 24),
+            usePhysical ? shellHighMat : shellLowMat,
+        );
         orbGroup.add(shell);
 
         // ── Inner rotating model ──
@@ -220,6 +248,8 @@ function buildProjectOrbs() {
         projectOrbs.push({
             group: orbGroup,
             shell,
+            shellHighMat,
+            shellLowMat,
             innerMesh,
             ring,
             light,
@@ -336,9 +366,11 @@ export function updateMechanics(dt, shipVelocity, _shipBox) {
         orbPos.y = orb.baseY + Math.sin(now + orb.bobPhase) * 0.12;
 
         // Shell pulsing glow
-        const pulse = 0.15 + Math.sin(now * 2 + orb.bobPhase) * 0.05;
-        orb.shell.material.opacity = pulse;
-        orb.shell.material.emissiveIntensity = 0.15 + Math.sin(now * 3 + orb.bobPhase) * 0.1;
+        const isPhysical = orb.shell.material === orb.shellHighMat;
+        const baseOpacity = isPhysical ? 0.15 : 0.28;
+        const baseEmissive = isPhysical ? 0.15 : 0.35;
+        orb.shell.material.opacity = baseOpacity + Math.sin(now * 2 + orb.bobPhase) * 0.05;
+        orb.shell.material.emissiveIntensity = baseEmissive + Math.sin(now * 3 + orb.bobPhase) * 0.1;
 
         // Light pulsing
         orb.light.intensity = 1.0 + Math.sin(now * 2 + orb.bobPhase) * 0.4;

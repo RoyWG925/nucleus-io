@@ -3,7 +3,7 @@
  * Wires all modules together and runs the game loop.
  */
 import { AudioEngine } from './audio.js';
-import { initScene, scene, camera, composer, clock, updateSceneUniforms, warpPass } from './scene.js';
+import { initScene, scene, camera, composer, clock, updateSceneUniforms, warpPass, getRenderQuality } from './scene.js';
 import {
     createStarfield, createGridFloor, createNebulaClouds, createCosmicDust,
     createDistantGalaxies, createExplosion, updateExplosions, updateEnvironment,
@@ -85,6 +85,8 @@ async function init() {
         createExplosion: (pos, col) => createExplosion(scene, pos, col),
     });
 
+    window.dispatchEvent(new CustomEvent('updateRenderQuality', { detail: getRenderQuality() }));
+
     animate();
 }
 
@@ -116,7 +118,7 @@ function animate() {
     updateMechanics(dt, shipVelocity, shipWorldBox);
 
     // Tick post-processing uniforms (film grain time, etc.)
-    if (warpPass) {
+    if (warpPass && warpPass.enabled) {
         warpPass.uniforms.uSpeed.value = shipVelocity.length();
     }
     updateSceneUniforms();
