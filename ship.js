@@ -154,12 +154,25 @@ function populateShipGroup(type) {
     }
 }
 
+export const SHIP_VARIANT_ALIASES = {
+    default: 'viper',
+    viper: 'viper',
+    stealth: 'phantom',
+    phantom: 'phantom',
+    heavy: 'titan',
+    titan: 'titan',
+};
+
+export function resolveShipVariant(type) {
+    return SHIP_VARIANT_ALIASES[type] || 'viper';
+}
+
 export function setShipVariant(type) {
-    if (!shipGroup || type === currentShipType) return;
-    currentShipType = type;
-    populateShipGroup(type);
-    // Dispatch for HUD label updates
-    window.dispatchEvent(new CustomEvent('shipVariantChanged', { detail: type }));
+    const resolved = resolveShipVariant(type);
+    if (!shipGroup || resolved === currentShipType) return;
+    currentShipType = resolved;
+    populateShipGroup(resolved);
+    window.dispatchEvent(new CustomEvent('shipVariantChanged', { detail: resolved }));
 }
 
 // ── Create Spaceship ───────────────────────────────────────
