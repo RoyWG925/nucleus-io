@@ -10,6 +10,23 @@ export const keys = {};
 /** Analog touch joystick state (-1..1). */
 export const touchState = { moveX: 0, moveY: 0 };
 
+let paintClearedFlightInput = () => {};
+
+export function clearFlightCommands() {
+    for (const code of Object.keys(keys)) keys[code] = false;
+    touchState.moveX = 0;
+    touchState.moveY = 0;
+}
+
+export function clearFlightInput() {
+    clearFlightCommands();
+    paintClearedFlightInput();
+}
+
+export function flightInputSuppressed() {
+    return typeof document !== 'undefined' && document.body.classList.contains('overlay-open');
+}
+
 /** Callbacks registered by other modules. */
 let _onMouseMove = null;
 let _ensureAudioCb = null;
@@ -166,6 +183,11 @@ export function setupInput({ shipGroup, ensureAudio }) {
     joyEl?.addEventListener('touchend', endJoyTouch);
     joyEl?.addEventListener('touchcancel', endJoyTouch);
 
+    paintClearedFlightInput = () => {
+        resetJoystick();
+        document.querySelectorAll('.touch-btn.active').forEach((btn) => btn.classList.remove('active'));
+    };
+
     // ── Touch Action Buttons (BOOST / UP / DOWN / RESET) ─────
     document.querySelectorAll('.touch-btn[data-key]').forEach(btn => {
         const code = btn.dataset.key;
@@ -186,6 +208,14 @@ export function setupInput({ shipGroup, ensureAudio }) {
         btn.addEventListener('mousedown', press);
         btn.addEventListener('mouseup', release);
         btn.addEventListener('mouseleave', release);
+    });
+
+    window.addEventListener('blur', clearFlightInput);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) clearFlightInput();
+    });
+    document.addEventListener('pointerlockchange', () => {
+        if (!document.pointerLockElement) clearFlightInput();
     });
 
     window.addEventListener('click', ensureAudio, { once: true });

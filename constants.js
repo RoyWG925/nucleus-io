@@ -54,10 +54,15 @@ export const FONT_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fon
 export const SHIP_SPEED   = 40;
 export const BOOST_MULT   = 2.5;
 export const ROTATE_SPEED = 2.2;
+export const THRUST_APPROACH_PER_SEC = 10;
+export const COAST_APPROACH_PER_SEC = 6.5;
+export const JOY_DEADZONE = 0.08;
 
 // Camera
-export const CAM_LERP   = 0.06;
+export const CAM_FOLLOW_PER_FRAME = 0.06;
 export const CAM_OFFSET = new THREE.Vector3(0, 6, -18);
+export const SHAKE_FRAME_DECAY = 0.92;
+export const FLIGHT_REF_FPS = 60;
 
 // Letter physics
 export const LETTER_MASS = 1;

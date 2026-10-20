@@ -500,11 +500,7 @@ export function showProjectPanel(data) {
     document.body.classList.add('overlay-open');
     clearTimeout(panel._hideTimer);
     panel._hideTimer = setTimeout(() => {
-        panel.classList.remove('visible');
-        const anyOpen = document.querySelector(
-            '#project-nav-overlay:not(.hidden), #info-overlay:not(.hidden), #archive-overlay:not(.hidden), #settings-panel:not(.hidden), #dev-terminal:not(.hidden)'
-        );
-        if (!anyOpen) document.body.classList.remove('overlay-open');
+        window.closeProjectPanel();
     }, 15000);
 }
 window.showProjectPanelManually = showProjectPanel;
