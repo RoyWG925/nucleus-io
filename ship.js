@@ -5,9 +5,11 @@
 import * as THREE from 'three';
 import {
     COLORS, SHIP_SPEED, BOOST_MULT, ROTATE_SPEED,
-    CAM_LERP, CAM_OFFSET, TRAIL_LEN,
+    THRUST_APPROACH_PER_SEC, COAST_APPROACH_PER_SEC, JOY_DEADZONE,
+    CAM_FOLLOW_PER_FRAME, CAM_OFFSET, TRAIL_LEN,
+    SHAKE_FRAME_DECAY, FLIGHT_REF_FPS,
 } from './constants.js';
-import { keys, touchState } from './input.js';
+import { keys, touchState, clearFlightCommands, flightInputSuppressed } from './input.js';
 
 // ── Exported state ─────────────────────────────────────────
 export let shipGroup;
@@ -19,7 +21,9 @@ let trailParticles;
 let trailIdx = 0;
 let wasBoosting = false;
 let shakeIntensity = 0;
-const speedEl = document.getElementById('speed-value');
+let flightDt = 1 / FLIGHT_REF_FPS;
+const STOP_SPEED = 0.5;
+const speedEl = typeof document !== 'undefined' ? document.getElementById('speed-value') : null;
 let lastSpeedHud = -1;
 
 const BASE_FWD        = new THREE.Vector3(0, 0, 1);
@@ -33,6 +37,7 @@ const LOOK_TARGET      = new THREE.Vector3();
 const FORWARD_DIR      = new THREE.Vector3();
 const UP_DIR           = new THREE.Vector3();
 const LOOK_FWD_DIR     = new THREE.Vector3();
+const DESIRED_VEL      = new THREE.Vector3();
 
 // ── Ship Material Palettes ─────────────────────────────────
 const PALETTES = {
@@ -212,50 +217,102 @@ export function updateTrail() {
     trailParticles.geometry.attributes.position.needsUpdate = true;
 }
 
+export function frameAlpha(perFrame, dt) {
+    return 1 - Math.pow(1 - perFrame, dt * FLIGHT_REF_FPS);
+}
+
+export function decayPerFrame(factor, dt) {
+    return Math.pow(factor, dt * FLIGHT_REF_FPS);
+}
+
+export function approachVelocity(current, desired, rate, dt) {
+    const alpha = 1 - Math.exp(-rate * Math.max(dt, 0));
+    current.lerp(desired, alpha);
+    return current;
+}
+
+export function rescaleDeadzone(value, deadzone = JOY_DEADZONE) {
+    const mag = Math.abs(value);
+    if (!(mag > deadzone) || deadzone >= 1) return 0;
+    return Math.sign(value) * (mag - deadzone) / (1 - deadzone);
+}
+
+function publishSpeed(speed) {
+    const shown = Math.round(speed);
+    if (shown === lastSpeedHud) return;
+    if (speedEl) speedEl.textContent = shown;
+    lastSpeedHud = shown;
+}
+
+function parkForCinematic(audio) {
+    shipVelocity.set(0, 0, 0);
+    publishSpeed(0);
+    audio.updateEngine(0, false);
+    wasBoosting = false;
+}
+
 // ── Flight Controls ────────────────────────────────────────
 export function updateShip(dt, audio, onReset) {
+    if (Number.isFinite(dt) && dt > 0) flightDt = dt;
+
+    const resetPressed = !!keys['KeyR'];
+    const pilotLocked = Boolean(cinematicTarget) || flightInputSuppressed();
+    if (pilotLocked) clearFlightCommands();
+    if (resetPressed) onReset();
+    if (cinematicTarget) {
+        parkForCinematic(audio);
+        return;
+    }
+
     const isBoosting = !!keys['Space'];
     const speedMult  = currentShipType === 'titan' ? 0.7 : currentShipType === 'phantom' ? 1.25 : 1.0;
     const boost  = isBoosting ? BOOST_MULT : 1;
     const speed  = SHIP_SPEED * boost * speedMult;
-    const rot    = ROTATE_SPEED * dt;
+    const rot    = ROTATE_SPEED * flightDt;
 
     const forward = FORWARD_DIR.copy(BASE_FWD).applyQuaternion(shipGroup.quaternion);
     const up      = UP_DIR.copy(BASE_UP).applyQuaternion(shipGroup.quaternion);
 
-    shipVelocity.set(0, 0, 0);
+    DESIRED_VEL.set(0, 0, 0);
 
-    if (keys['KeyW'] || keys['ArrowUp'])    shipVelocity.addScaledVector(forward, speed);
-    if (keys['KeyS'] || keys['ArrowDown'])  shipVelocity.addScaledVector(forward, -speed * 0.5);
+    if (keys['KeyW'] || keys['ArrowUp'])    DESIRED_VEL.addScaledVector(forward, speed);
+    if (keys['KeyS'] || keys['ArrowDown'])  DESIRED_VEL.addScaledVector(forward, -speed * 0.5);
     if (keys['KeyA'] || keys['ArrowLeft'])  shipGroup.rotateOnWorldAxis(up, rot);
     if (keys['KeyD'] || keys['ArrowRight']) shipGroup.rotateOnWorldAxis(up, -rot);
     if (keys['KeyQ']) shipGroup.rotateOnAxis(ROLL_AXIS, rot);
     if (keys['KeyE']) shipGroup.rotateOnAxis(ROLL_AXIS, -rot);
-    if (keys['ShiftLeft']  || keys['ShiftRight'])   shipVelocity.y += speed * 0.6;
-    if (keys['ControlLeft']|| keys['ControlRight'])  shipVelocity.y -= speed * 0.6;
+    if (keys['ShiftLeft']  || keys['ShiftRight'])   DESIRED_VEL.y += speed * 0.6;
+    if (keys['ControlLeft']|| keys['ControlRight'])  DESIRED_VEL.y -= speed * 0.6;
 
-    // Touch analog joystick (moveY > 0 forward, moveY < 0 reverse, moveX turn)
-    if (Math.abs(touchState.moveY) > 0.08) {
-        const thrustMult = touchState.moveY > 0 ? touchState.moveY : touchState.moveY * 0.5;
-        shipVelocity.addScaledVector(forward, speed * thrustMult);
+    const joyY = rescaleDeadzone(touchState.moveY);
+    const joyX = rescaleDeadzone(touchState.moveX);
+    if (joyY !== 0) {
+        const thrustMult = joyY > 0 ? joyY : joyY * 0.5;
+        DESIRED_VEL.addScaledVector(forward, speed * thrustMult);
     }
-    if (Math.abs(touchState.moveX) > 0.08) {
-        shipGroup.rotateOnWorldAxis(up, -rot * touchState.moveX);
-    }
-
-    shipGroup.position.addScaledVector(shipVelocity, dt);
-
-    const spd = Math.round(shipVelocity.length());
-    if (spd !== lastSpeedHud) {
-        if (speedEl) speedEl.textContent = spd;
-        lastSpeedHud = spd;
+    if (joyX !== 0) {
+        shipGroup.rotateOnWorldAxis(up, -rot * joyX);
     }
 
-    audio.updateEngine(spd, isBoosting);
+    const commanding = DESIRED_VEL.lengthSq() > 1e-8;
+    approachVelocity(
+        shipVelocity,
+        DESIRED_VEL,
+        commanding ? THRUST_APPROACH_PER_SEC : COAST_APPROACH_PER_SEC,
+        flightDt,
+    );
+    if (!commanding && shipVelocity.lengthSq() < STOP_SPEED * STOP_SPEED) {
+        shipVelocity.set(0, 0, 0);
+    }
+
+    shipGroup.position.addScaledVector(shipVelocity, flightDt);
+
+    const spd = shipVelocity.length();
+    publishSpeed(spd);
+
+    audio.updateEngine(Math.round(spd), isBoosting);
     if (isBoosting && !wasBoosting) audio.playBoost();
     wasBoosting = isBoosting;
-
-    if (keys['KeyR']) onReset();
 }
 
 // ── Cinematic Mode ─────────────────────────────────────────
@@ -269,18 +326,19 @@ export function setCinematicTarget(target, camera) {
 }
 
 // ── Camera Follow ──────────────────────────────────────────
-export function updateCamera(camera) {
+export function updateCamera(camera, dt = flightDt) {
+    const follow = frameAlpha(CAM_FOLLOW_PER_FRAME, dt);
     if (cinematicTarget) {
         const tPos  = cinematicTarget.position;
         const viewPos = tPos.clone().add(new THREE.Vector3(0, 2, 7));
-        camera.position.lerp(viewPos, CAM_LERP * 0.5);
-        LOOK_TARGET.lerp(tPos, CAM_LERP * 0.8);
+        camera.position.lerp(viewPos, frameAlpha(CAM_FOLLOW_PER_FRAME * 0.5, dt));
+        LOOK_TARGET.lerp(tPos, frameAlpha(CAM_FOLLOW_PER_FRAME * 0.8, dt));
         camera.lookAt(LOOK_TARGET);
-        shipGroup.position.lerp(tPos.clone().add(new THREE.Vector3(0, 15, 0)), CAM_LERP);
+        shipGroup.position.lerp(tPos.clone().add(new THREE.Vector3(0, 15, 0)), follow);
     } else {
         CAM_OFFSET_WORLD.copy(CAM_OFFSET).applyQuaternion(shipGroup.quaternion);
         CAM_TARGET.copy(shipGroup.position).add(CAM_OFFSET_WORLD);
-        camera.position.lerp(CAM_TARGET, CAM_LERP);
+        camera.position.lerp(CAM_TARGET, follow);
         LOOK_TARGET.copy(shipGroup.position);
         LOOK_TARGET.add(LOOK_FWD_DIR.set(0, 0, 8).applyQuaternion(shipGroup.quaternion));
         camera.lookAt(LOOK_TARGET);
@@ -288,7 +346,7 @@ export function updateCamera(camera) {
     if (shakeIntensity > 0.01) {
         camera.position.x += (Math.random()-0.5) * shakeIntensity;
         camera.position.y += (Math.random()-0.5) * shakeIntensity;
-        shakeIntensity *= 0.92;
+        shakeIntensity *= decayPerFrame(SHAKE_FRAME_DECAY, dt);
     } else {
         shakeIntensity = 0;
     }
@@ -297,6 +355,7 @@ export function updateCamera(camera) {
 export function triggerShake(intensity = 0.6) { shakeIntensity = intensity; }
 
 export function resetShip() {
+    cinematicTarget = null;
     shipGroup.position.set(0, 0, -80);
     shipGroup.rotation.set(0, 0, 0);
     shipGroup.quaternion.identity();

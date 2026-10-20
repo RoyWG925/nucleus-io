@@ -39,8 +39,9 @@ img { display: block; max-width: 100%; }
 /* Three.js Container */
 #three-container {
     position: fixed; inset: 0; z-index: 0;
+    touch-action: none;
 }
-#three-container canvas { display: block; width: 100% !important; height: 100% !important; }
+#three-container canvas { display: block; width: 100% !important; height: 100% !important; touch-action: none; }
 
 /* ===================== LOADING SCREEN ===================== */
 #loading-screen {
