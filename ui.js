@@ -96,7 +96,38 @@ export function setupUI(audio, ensureAudio) {
         });
     }
 
+    const PROJECTS_DISMISS_KEY = 'nucleus-projects-dismissed';
+
+    function isCoarsePointer() {
+        const media = window.matchMedia?.bind(window);
+        if (!media) return false;
+        return media('(pointer: coarse)').matches
+            || media('(any-pointer: coarse) and (hover: none)').matches;
+    }
+
+    function projectsDismissed() {
+        try {
+            return localStorage.getItem(PROJECTS_DISMISS_KEY) === '1';
+        } catch {
+            return false;
+        }
+    }
+
+    function rememberProjectsDismissal() {
+        try {
+            localStorage.setItem(PROJECTS_DISMISS_KEY, '1');
+        } catch {
+            return;
+        }
+    }
+
     function setActiveOverlay(next = null) {
+        const projectsWasOpen = Boolean(
+            overlays.projects && !overlays.projects.classList.contains('hidden'),
+        );
+        if (projectsWasOpen && next !== 'projects' && isCoarsePointer()) {
+            rememberProjectsDismissal();
+        }
         if (next) closeProjectPanel();
         for (const [key, el] of Object.entries(overlays)) {
             el?.classList.toggle('hidden', key !== next);
@@ -328,5 +359,9 @@ export function setupUI(audio, ensureAudio) {
             default:
                 printTerm(`<span class="term-error">Command not found:</span> ${main}. Type 'help' for options.`);
         }
+    }
+
+    if (isCoarsePointer() && !projectsDismissed()) {
+        setActiveOverlay('projects');
     }
 }
