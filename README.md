@@ -12,6 +12,10 @@ NUCLEUS.IO is Roy Wang's developer portfolio as a small WebGL world. Flight has 
 
 `WASD` fly · `Shift` / `Ctrl` up and down · `Space` boost · mouse aim · `R` reset.
 
+## On a phone
+
+The first visit with a coarse pointer opens Projects after load. Close the list and the browser remembers. Cards link to a public repo or demo. A project with no public URL shows Unavailable or In Development instead of an empty link row.
+
 ## Highlights
 
 - Post stack written in GLSL: bloom, vignette, chromatic aberration, film grain, and a boost-time radial blur
