@@ -6,9 +6,25 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { COLORS, FONT_URL } from './constants.js';
+import { getQualityConfig, getRenderQuality } from './scene.js';
 
 /** Array of letter objects: { mesh, glow, color, hit, vel, angVel, size } */
 export let letters = [];
+
+export function applyTextQuality(quality = getRenderQuality()) {
+    const usePhysical = Boolean(getQualityConfig(quality).physicalShells);
+    for (const l of letters) {
+        const nextMat = usePhysical ? l.highMat : l.lowMat;
+        nextMat.emissiveIntensity = l.hit ? 0.4 : (usePhysical ? 0.6 : 0.75);
+        l.mesh.material = nextMat;
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('updateRenderQuality', (e) => {
+        applyTextQuality(e.detail);
+    });
+}
 
 /**
  * Load font and create neon text. Returns a promise that resolves
@@ -98,7 +114,7 @@ function createNeonText(scene, font) {
         const col = textColors[i] || COLORS.tertiary;
 
         // Core material: Sleek glowing glass
-        const mat = new THREE.MeshPhysicalMaterial({
+        const highMat = new THREE.MeshPhysicalMaterial({
             color: 0x000000, 
             emissive: col,
             emissiveIntensity: 0.6, 
@@ -108,7 +124,17 @@ function createNeonText(scene, font) {
             opacity: 0.6,
             clearcoat: 1.0
         });
-        const mesh = new THREE.Mesh(geos[i], mat);
+        const lowMat = new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: 0.75,
+            metalness: 0.6,
+            roughness: 0.2,
+            transparent: true,
+            opacity: 0.82,
+        });
+        const usePhysical = Boolean(getQualityConfig(getRenderQuality()).physicalShells);
+        const mesh = new THREE.Mesh(geos[i], usePhysical ? highMat : lowMat);
         
         // Add crisp neon borders (Toned down)
         const edges = new THREE.EdgesGeometry(geos[i], 30);
@@ -127,6 +153,8 @@ function createNeonText(scene, font) {
 
         letters.push({
             mesh,
+            highMat,
+            lowMat,
             glow,
             color: col,
             hit: false,

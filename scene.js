@@ -147,9 +147,137 @@ const WarpSpeedShader = {
 
 // ── Exported State ─────────────────────────────────────────
 export let scene, camera, renderer, composer, clock, warpPass;
+export let bloomPass, vignettePass, chromaPass, filmGrainPass;
 
-// Keep references for runtime updates
-let bloomPass, filmGrainPass;
+export const QUALITY_STORAGE_KEY = 'renderQuality';
+
+export const QUALITY_TIERS = {
+    high: {
+        maxPixelRatio: 2,
+        passes: { bloom: true, vignette: true, chroma: true, grain: true, filmGrain: true, warp: true },
+        physicalShells: true,
+        vfxLowDensity: false,
+    },
+    medium: {
+        maxPixelRatio: 1,
+        passes: { bloom: true, vignette: true, chroma: false, grain: false, filmGrain: false, warp: true },
+        physicalShells: true,
+        vfxLowDensity: false,
+    },
+    low: {
+        maxPixelRatio: 0.75,
+        passes: { bloom: false, vignette: true, chroma: false, grain: false, filmGrain: false, warp: false },
+        physicalShells: false,
+        vfxLowDensity: true,
+    },
+};
+
+export function normalizeQuality(quality) {
+    return quality === 'low' || quality === 'medium' || quality === 'high' ? quality : 'high';
+}
+
+export function getQualityPassFlags(quality) {
+    return { ...QUALITY_TIERS[normalizeQuality(quality)].passes };
+}
+
+export function getQualityConfig(quality) {
+    return QUALITY_TIERS[normalizeQuality(quality)];
+}
+
+export function readStoredQuality(storage = typeof localStorage !== 'undefined' ? localStorage : null) {
+    try {
+        const saved = storage?.getItem(QUALITY_STORAGE_KEY);
+        if (saved === 'high' || saved === 'medium' || saved === 'low') {
+            return saved;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+export function writeStoredQuality(quality, storage = typeof localStorage !== 'undefined' ? localStorage : null) {
+    const normalized = normalizeQuality(quality);
+    try {
+        storage?.setItem(QUALITY_STORAGE_KEY, normalized);
+    } catch {
+        return normalized;
+    }
+    return normalized;
+}
+
+export function isCoarseOrSmallViewport(win = typeof window !== 'undefined' ? window : null) {
+    if (!win) return false;
+    const coarse =
+        Boolean(win.matchMedia?.('(pointer: coarse)').matches) ||
+        Boolean(win.matchMedia?.('(any-pointer: coarse) and (hover: none)').matches);
+    const smallViewport =
+        Boolean(win.matchMedia?.('(max-width: 768px)').matches) ||
+        (typeof win.innerWidth === 'number' && win.innerWidth <= 768);
+    return coarse || smallViewport;
+}
+
+export function resolveInitialQuality({
+    savedQuality = readStoredQuality(),
+    coarseOrSmall = isCoarseOrSmallViewport(),
+} = {}) {
+    if (savedQuality === 'high' || savedQuality === 'medium' || savedQuality === 'low') {
+        return savedQuality;
+    }
+    return coarseOrSmall ? 'low' : 'high';
+}
+
+let currentQuality = resolveInitialQuality();
+
+export function getRenderQuality() {
+    return currentQuality;
+}
+
+export function getQualityPixelRatio(
+    quality = currentQuality,
+    devicePixelRatio = (typeof window !== 'undefined' && window.devicePixelRatio) || 1,
+) {
+    const tier = normalizeQuality(quality);
+    if (tier === 'low') return 0.75;
+    if (tier === 'medium') return 1;
+    return Math.min(devicePixelRatio, 2);
+}
+
+export function syncQualityButtons(quality = currentQuality) {
+    if (typeof document === 'undefined') return;
+    const activeTier = normalizeQuality(quality);
+    document.querySelectorAll('.sp-toggle').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.quality === activeTier);
+    });
+}
+
+export function applyRenderQuality(quality) {
+    currentQuality = normalizeQuality(quality);
+    const flags = getQualityPassFlags(currentQuality);
+    const pixelRatio = getQualityPixelRatio(currentQuality);
+
+    if (renderer) {
+        renderer.setPixelRatio(pixelRatio);
+    }
+    if (composer) {
+        composer.setPixelRatio(pixelRatio);
+    }
+    if (bloomPass) {
+        bloomPass.enabled = flags.bloom;
+        if (typeof window !== 'undefined') {
+            bloomPass.resolution.set(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio);
+        }
+    }
+    if (vignettePass) vignettePass.enabled = flags.vignette;
+    if (chromaPass) chromaPass.enabled = flags.chroma;
+    if (filmGrainPass) filmGrainPass.enabled = flags.grain;
+    if (warpPass) {
+        warpPass.enabled = flags.warp;
+        if (!flags.warp) warpPass.uniforms.uSpeed.value = 0;
+    }
+    syncQualityButtons(currentQuality);
+    return currentQuality;
+}
 
 /**
  * Create the core Three.js scene, renderer, camera, cinematic lighting,
@@ -199,11 +327,11 @@ export function initScene() {
     composer.addPass(bloomPass);
 
     // 3 — Vignette (darken edges for cinematic framing)
-    const vignettePass = new ShaderPass(VignetteShader);
+    vignettePass = new ShaderPass(VignetteShader);
     composer.addPass(vignettePass);
 
     // 4 — Chromatic aberration (subtle lens imperfection)
-    const chromaPass = new ShaderPass(ChromaAberrationShader);
+    chromaPass = new ShaderPass(ChromaAberrationShader);
     composer.addPass(chromaPass);
 
     // 5 — Film grain (life-like texture)
@@ -216,6 +344,9 @@ export function initScene() {
 
     // 7 — Output (tone-mapping / color-space conversion)
     composer.addPass(new OutputPass());
+
+    currentQuality = resolveInitialQuality();
+    applyRenderQuality(currentQuality);
 
     // ─── Lighting: Cinematic 3-Point + Volumetric Accents ──
 
@@ -255,24 +386,7 @@ export function initScene() {
     });
 
     window.addEventListener('updateRenderQuality', (e) => {
-        const quality = e.detail; // 'high', 'medium', 'low'
-        switch(quality) {
-            case 'high':
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                if (bloomPass) bloomPass.enabled = true;
-                if (filmGrainPass) filmGrainPass.enabled = true;
-                break;
-            case 'medium':
-                renderer.setPixelRatio(1);
-                if (bloomPass) bloomPass.enabled = true;
-                if (filmGrainPass) filmGrainPass.enabled = false;
-                break;
-            case 'low':
-                renderer.setPixelRatio(0.75);
-                if (bloomPass) bloomPass.enabled = false;
-                if (filmGrainPass) filmGrainPass.enabled = false;
-                break;
-        }
+        applyRenderQuality(e.detail);
     });
 
     // ─── Resize Handler ────────────────────────────────────
@@ -285,7 +399,7 @@ export function initScene() {
  * all passes. The film grain needs its time uniform updated externally.
  */
 export function updateSceneUniforms() {
-    if (filmGrainPass) {
+    if (filmGrainPass && filmGrainPass.enabled) {
         filmGrainPass.uniforms.time.value = performance.now() * 0.001;
     }
 }
@@ -294,12 +408,15 @@ export function updateSceneUniforms() {
 function onResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    const pixelRatio = getQualityPixelRatio(currentQuality);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(w, h);
+    composer.setPixelRatio(pixelRatio);
     composer.setSize(w, h);
 
     if (bloomPass) {
-        bloomPass.resolution.set(w, h);
+        bloomPass.resolution.set(w * pixelRatio, h * pixelRatio);
     }
 }
