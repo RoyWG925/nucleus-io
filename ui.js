@@ -5,7 +5,7 @@
 import { setGravity, getGravity } from './physics.js';
 import { PROJECT_ORBS } from './constants.js';
 import { projectOrbs } from './mechanics.js';
-import { setCinematicTarget, setShipVariant } from './ship.js';
+import { resolveShipVariant, setCinematicTarget, setShipVariant } from './ship.js';
 import { camera } from './scene.js';
 
 /**
@@ -52,63 +52,33 @@ export function setupUI(audio, ensureAudio) {
         if (icon) icon.textContent = muted ? 'volume_off' : 'volume_up';
     });
 
-    // Settings toggle
-    const spPanel = document.getElementById('settings-panel');
-    document.getElementById('btn-settings')?.addEventListener('click', () => {
-        audio.playUIClick();
-        spPanel?.classList.toggle('hidden');
-    });
-    document.getElementById('sp-close')?.addEventListener('click', () => {
-        audio.playUIClick();
-        spPanel?.classList.add('hidden');
-    });
+    const ppPanel = document.getElementById('project-panel');
+    const terminal = document.getElementById('dev-terminal');
+    const termInput = document.getElementById('terminal-input');
+    const termOutput = document.getElementById('terminal-output');
+    const termClose = document.getElementById('term-close');
+    const navLinks = document.querySelectorAll('a.nav-link[data-view]');
+    const overlays = {
+        projects: document.getElementById('project-nav-overlay'),
+        archive: document.getElementById('archive-overlay'),
+        info: document.getElementById('info-overlay'),
+        settings: document.getElementById('settings-panel'),
+    };
 
-    // Settings Sliders
-    document.getElementById('volume-slider')?.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value) / 100;
-        audio.bgm.volume = val * 0.5;
-        // SFX volume could be handled similarly via a master getter
-    });
-    
-    document.getElementById('bloom-slider')?.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value) / 100;
-        window.dispatchEvent(new CustomEvent('updateBloomIntensity', { detail: val }));
-    });
+    function syncOverlayState() {
+        const anyOverlayOpen =
+            Object.values(overlays).some(el => el && !el.classList.contains('hidden')) ||
+            Boolean(ppPanel?.classList.contains('visible')) ||
+            Boolean(terminal && !terminal.classList.contains('hidden'));
+        document.body.classList.toggle('overlay-open', anyOverlayOpen);
+    }
 
-    // Quality Toggle
-    document.querySelectorAll('.sp-toggle').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            audio.playUIClick();
-            document.querySelectorAll('.sp-toggle').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            window.dispatchEvent(new CustomEvent('updateRenderQuality', { detail: e.target.dataset.quality }));
-        });
-    });
-
-    // Info Overlay
-    const infoOverlay = document.getElementById('info-overlay');
-    document.querySelector('[data-view="info"]')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        audio.playUIClick();
-        infoOverlay?.classList.toggle('hidden');
-    });
-    document.getElementById('io-close')?.addEventListener('click', () => {
-        audio.playUIClick();
-        infoOverlay?.classList.add('hidden');
-    });
-
-    // Archive Overlay
-    const archiveOverlay = document.getElementById('archive-overlay');
-    document.querySelector('[data-view="archive"]')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        audio.playUIClick();
-        archiveOverlay?.classList.toggle('hidden');
-        renderArchiveList();
-    });
-    document.getElementById('ao-close')?.addEventListener('click', () => {
-        audio.playUIClick();
-        archiveOverlay?.classList.add('hidden');
-    });
+    function closeProjectPanel() {
+        if (!ppPanel?.classList.contains('visible')) return;
+        ppPanel.classList.remove('visible');
+        clearTimeout(ppPanel._hideTimer);
+        setCinematicTarget(null, camera);
+    }
 
     function renderArchiveList() {
         const aoList = document.getElementById('ao-list');
@@ -125,65 +95,108 @@ export function setupUI(audio, ensureAudio) {
         });
     }
 
-    // Ship selector
+    function setActiveOverlay(next = null) {
+        if (next) closeProjectPanel();
+        for (const [key, el] of Object.entries(overlays)) {
+            el?.classList.toggle('hidden', key !== next);
+        }
+        if (next === 'archive') {
+            renderArchiveList();
+        }
+        const activeView = next === 'projects' || next === 'archive' || next === 'info' ? next : 'playground';
+        navLinks.forEach(link => {
+            link.classList.toggle('active', link.dataset.view === activeView);
+        });
+        syncOverlayState();
+    }
+
+    function toggleOverlay(name) {
+        const target = overlays[name];
+        const isOpen = target && !target.classList.contains('hidden');
+        setActiveOverlay(isOpen ? null : name);
+    }
+
+    document.getElementById('btn-settings')?.addEventListener('click', () => {
+        audio.playUIClick();
+        toggleOverlay('settings');
+    });
+
+    ['sp-close', 'io-close', 'ao-close', 'pnv-close'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', () => {
+            audio.playUIClick();
+            setActiveOverlay(null);
+        });
+    });
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            audio.playUIClick();
+            const view = link.dataset.view;
+            if (view === 'playground') {
+                closeProjectPanel();
+                setActiveOverlay(null);
+            } else {
+                toggleOverlay(view);
+            }
+        });
+    });
+
+    document.getElementById('volume-slider')?.addEventListener('input', (e) => {
+        ensureAudio();
+        const val = parseInt(e.target.value, 10) / 100;
+        if (audio.musicGain) {
+            audio.musicGain.gain.value = val * 0.5;
+        }
+        if (audio.masterGain && !audio.muted) {
+            audio.masterGain.gain.value = val;
+        }
+    });
+
+    document.getElementById('bloom-slider')?.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value) / 100;
+        window.dispatchEvent(new CustomEvent('updateBloomIntensity', { detail: val }));
+    });
+
+    document.querySelectorAll('.sp-toggle').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            audio.playUIClick();
+            document.querySelectorAll('.sp-toggle').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            window.dispatchEvent(new CustomEvent('updateRenderQuality', { detail: e.target.dataset.quality }));
+        });
+    });
+
     document.querySelectorAll('.hud-btn[data-tool="ship"]').forEach(btn => {
         btn.addEventListener('click', () => {
-            const variant = btn.dataset.ship;
+            const variant = resolveShipVariant(btn.dataset.ship);
             setShipVariant(variant);
             window.showLog?.(`Hangar: Deployed ${variant.toUpperCase()} class`, "system");
         });
     });
 
-    // Project panel close button
     const ppClose = document.querySelector('.pp-close');
-    const ppPanel = document.getElementById('project-panel');
     if (ppClose && ppPanel) {
         ppClose.addEventListener('click', () => {
-            ppPanel.classList.remove('visible');
-            clearTimeout(ppPanel._hideTimer);
-            // Also exit cinematic mode if we were viewing it
-            setCinematicTarget(null, camera);
+            closeProjectPanel();
+            syncOverlayState();
         });
     }
-    // Escape key also closes project panel and cinematic nav
+
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Escape') {
-            if (ppPanel?.classList.contains('visible')) {
-                ppPanel.classList.remove('visible');
-                clearTimeout(ppPanel._hideTimer);
-                setCinematicTarget(null, camera);
+            closeProjectPanel();
+            if (terminal && !terminal.classList.contains('hidden')) {
+                terminal.classList.add('hidden');
+                termInput?.blur();
             }
-            document.getElementById('project-nav-overlay')?.classList.add('hidden');
+            setActiveOverlay(null);
         }
     });
-
-    // ── Cinematic Navigation Overlay (Dual Mode) ──
-    const overlay = document.getElementById('project-nav-overlay');
-    const toggleLinks = document.querySelectorAll('a.nav-link');
-    
-    // Wire up the "PROJECTS" header link to show the overlay
-    toggleLinks.forEach(link => {
-        if (link.textContent.includes('PROJECT')) {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                audio.playUIClick();
-                if (overlay) overlay.classList.toggle('hidden');
-            });
-        }
-    });
-
-    const pnvClose = document.getElementById('pnv-close');
-    if (pnvClose) {
-        pnvClose.addEventListener('click', () => {
-            audio.playUIClick();
-            overlay.classList.add('hidden');
-        });
-    }
 
     const pnvList = document.getElementById('pnv-list');
     if (pnvList) {
-        // Populate the list from PROJECT_ORBS
-        PROJECT_ORBS.forEach((data, index) => {
+        PROJECT_ORBS.forEach((data) => {
             const el = document.createElement('div');
             el.className = 'pnv-item';
             el.innerHTML =
@@ -194,32 +207,19 @@ export function setupUI(audio, ensureAudio) {
                 '<span class="material-symbols-outlined" style="color:var(--secondary)">movie</span>';
             el.addEventListener('click', () => {
                 audio.playUIClick();
-                // 1. Hide the nav overlay
-                overlay.classList.add('hidden');
-                
-                // 2. Find the spawned orb group in mechanics.js
-                // Because elements might be missing if collected, we check if it exists:
+                setActiveOverlay(null);
                 const targetOrb = projectOrbs.find((o) => o.data.name === data.name);
                 if (targetOrb && !targetOrb.collected) {
-                    // Set camera to cinematic lerp mode towards this orb
                     setCinematicTarget(targetOrb.group, camera);
-                    
-                    // 3. Keep the ship away from it (handled in ship.js camera code), but STILL show the panel manually
-                    window.showProjectPanelManually(data); // We need to export this or just dispatch an event.
+                    window.showProjectPanelManually(data);
                 } else {
-                    // Orb was already collected, just show panel
                     window.showProjectPanelManually(data);
                 }
+                syncOverlayState();
             });
             pnvList.appendChild(el);
         });
     }
-
-    // ── Developer Terminal ──
-    const terminal = document.getElementById('dev-terminal');
-    const termInput = document.getElementById('terminal-input');
-    const termOutput = document.getElementById('terminal-output');
-    const termClose = document.getElementById('term-close');
 
     function toggleTerminal() {
         if (!terminal) return;
@@ -233,6 +233,7 @@ export function setupUI(audio, ensureAudio) {
             terminal.classList.add('hidden');
             termInput?.blur();
         }
+        syncOverlayState();
     }
 
     window.addEventListener('toggleTerminal', toggleTerminal);
@@ -310,7 +311,7 @@ export function setupUI(audio, ensureAudio) {
                         setShipVariant(variant);
                         printTerm(`<span class="term-success">Success:</span> Switched to ${variant.toUpperCase()} class.`);
                         document.querySelectorAll('.hud-btn[data-tool="ship"]').forEach(b => {
-                            b.classList.toggle('active', b.dataset.ship === variant);
+                            b.classList.toggle('active', resolveShipVariant(b.dataset.ship) === variant);
                         });
                     } else {
                         printTerm(`<span class="term-error">Error:</span> Unknown class '${variant}'. Models: viper, phantom, titan.`);

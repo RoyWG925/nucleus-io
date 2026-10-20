@@ -406,11 +406,25 @@ export function showProjectPanel(data) {
 
     const previewImg = panel.querySelector('#pp-preview');
     if (previewImg) {
-        if (data.preview) {
-            previewImg.src = data.preview;
-            previewImg.style.display = 'block';
-        } else {
+        const applyPreviewFallback = () => {
             previewImg.style.display = 'none';
+            panel.classList.add('no-preview');
+        };
+        applyPreviewFallback();
+        previewImg.onerror = applyPreviewFallback;
+        previewImg.onload = () => {
+            if (previewImg.naturalWidth > 0) {
+                previewImg.style.display = 'block';
+                panel.classList.remove('no-preview');
+            } else {
+                applyPreviewFallback();
+            }
+        };
+        if (data.preview) {
+            previewImg.removeAttribute('src');
+            previewImg.src = data.preview;
+        } else {
+            previewImg.removeAttribute('src');
         }
     }
 
@@ -450,11 +464,16 @@ export function showProjectPanel(data) {
     const hex = '#' + new THREE.Color(data.color).getHexString();
     panel.style.setProperty('--pp-accent', hex);
 
-    // Show
     panel.classList.add('visible');
-    // Auto-hide after 15 seconds if in cinematic mode to give time to read
+    document.body.classList.add('overlay-open');
     clearTimeout(panel._hideTimer);
-    panel._hideTimer = setTimeout(() => panel.classList.remove('visible'), 15000);
+    panel._hideTimer = setTimeout(() => {
+        panel.classList.remove('visible');
+        const anyOpen = document.querySelector(
+            '#project-nav-overlay:not(.hidden), #info-overlay:not(.hidden), #archive-overlay:not(.hidden), #settings-panel:not(.hidden), #dev-terminal:not(.hidden)'
+        );
+        if (!anyOpen) document.body.classList.remove('overlay-open');
+    }, 15000);
 }
 window.showProjectPanelManually = showProjectPanel;
 
